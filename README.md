@@ -47,3 +47,16 @@ awslogs get [log group name] -w
 - https://hub.docker.com/r/magsol/distributed-dask/
 
 - https://github.com/ogrisel/docker-distributed
+
+
+## Issues
+
+For building AMI's for use with ECS... putting these here for future reference:
+
+https://stackoverflow.com/questions/39018180/aws-ecs-agent-wont-start
+http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-install.html
+http://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html
+
+
+For building GPU (p2.xlarge) instance on ecs:
+https://github.com/bfolkens/nvidia-docker-bootstrap

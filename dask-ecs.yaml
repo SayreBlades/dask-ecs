@@ -249,7 +249,6 @@ Resources:
       MaxSize: !Ref ClusterSize
       DesiredCapacity: !Ref ClusterSize
 
-
   DaskLogGroup:
       Type: "AWS::Logs::LogGroup"
       Properties:
