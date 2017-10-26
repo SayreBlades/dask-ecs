@@ -354,8 +354,9 @@ Resources:
       NetworkMode: host
       ContainerDefinitions:
       - MemoryReservation: 1024
+        Privileged: true
         Essential: true
-        Name: dask-worke0
+        Name: dask-worker
         Image:
           !Ref DaskWorkerImage
         Cpu: 0
