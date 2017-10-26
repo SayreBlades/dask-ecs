@@ -1,0 +1,387 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Dask Cluster
+
+Mappings:
+  network:
+    internet:
+      cidr: 0.0.0.0/0
+    vpc:
+      cidr: 10.0.0.0/16
+    subnet1:
+      cidr: 10.0.0.0/24
+    subnet2:
+      cidr: 10.0.1.0/24
+    subnet3:
+      cidr: 10.0.2.0/24
+  service:
+    daskscheduler-app:
+      port: 8786
+    daskscheduler-bokeh:
+      port: 8787
+    daskworker:
+      port: 5000
+
+
+Parameters:
+
+  EC2ImageId:
+    Type: String
+    Description: EC2 AMI id
+    Default: ami-53dd2c29
+
+  EC2InstanceType:
+    Type: String
+    Description: EC2 instance type
+    Default: m4.large
+
+  EC2KeyPairName:
+    Type: String
+    Description: Used for ssh access to ec2 instances, create in ec2 dash -> key pairs
+
+  ClusterSize:
+    Type: Number
+    Default: 3
+
+  DaskSchedulerImage:
+    Type: String
+    Default: sayreblades/dask:0.0.1
+
+  DaskWorkerImage:
+    Type: String
+    Default: sayreblades/dask:0.0.1
+
+Outputs:
+
+  SchedulerHTTP:
+    Value: !Sub
+      - http://${Domain}
+      - { Domain: !GetAtt DaskSchedulerServiceELB.DNSName }
+    Export:
+      Name: SchedulerHTTP
+
+  SchedulerTCP:
+    Value: !Sub
+      - ${Domain}:${Port}
+      - { Domain: !GetAtt DaskSchedulerServiceELB.DNSName, Port: 8786 }
+    Export:
+      Name: SchedulerTCP
+
+
+Resources:
+
+  #####################################################################################
+  # NETWORKING
+  #####################################################################################
+
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      CidrBlock: !FindInMap [network, vpc, cidr]
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap [network, subnet1, cidr]
+      AvailabilityZone: !Select [0, !GetAZs { "Ref": "AWS::Region" } ]
+
+  Subnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+
+  Subnet1RouteTableAttachGateway:
+    DependsOn: AttachGateway
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Subnet1RouteTable
+      GatewayId: !Ref InternetGateway
+      DestinationCidrBlock: !FindInMap [ network, internet, cidr ]
+
+  Subnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet1
+      RouteTableId: !Ref Subnet1RouteTable
+
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap [network, subnet2, cidr]
+      AvailabilityZone: !Select [1, !GetAZs { "Ref": "AWS::Region" } ]
+
+  Subnet2RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+
+  Subnet2RouteTableAttachGateway:
+    DependsOn: AttachGateway
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Subnet2RouteTable
+      GatewayId: !Ref InternetGateway
+      DestinationCidrBlock: !FindInMap [ network, internet, cidr ]
+
+  Subnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet2
+      RouteTableId: !Ref Subnet2RouteTable
+
+  Subnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap [network, subnet3, cidr]
+      AvailabilityZone: !Select [2, !GetAZs { "Ref": "AWS::Region" } ]
+
+  Subnet3RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+
+  Subnet3RouteTableAttachGateway:
+    DependsOn: AttachGateway
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Subnet3RouteTable
+      GatewayId: !Ref InternetGateway
+      DestinationCidrBlock: !FindInMap [ network, internet, cidr ]
+
+  Subnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet3
+      RouteTableId: !Ref Subnet3RouteTable
+
+
+  #####################################################################################
+  # ECS
+  #####################################################################################
+
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+
+  EcsInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Dask cluster machine security group
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+      # SSH is open
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: "tcp"
+        FromPort: 22
+        ToPort: 22
+      # Internal requests
+      - CidrIp: !FindInMap [network, vpc, cidr]
+        IpProtocol: "tcp"
+        FromPort: 0
+        ToPort: 65535
+
+  EcsInstancePolicy:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+  EcsInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: EcsInstancePolicy
+
+  EcsInstanceLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !Ref EC2ImageId
+      InstanceType: !Ref EC2InstanceType
+      AssociatePublicIpAddress: "true"
+      IamInstanceProfile: !Ref EcsInstanceProfile
+      KeyName: !Ref EC2KeyPairName
+      SecurityGroups:
+      - !Ref EcsInstanceSecurityGroup
+      EbsOptimized: false
+      UserData:
+        "Fn::Base64": !Sub |
+          #!/bin/bash
+          echo ECS_CLUSTER=${EcsCluster} >> /etc/ecs/ecs.config
+      BlockDeviceMappings:
+      - DeviceName: /dev/xvda
+        Ebs:
+          VolumeSize: "50"
+          VolumeType: gp2
+          DeleteOnTermination: "true"
+
+  EcsInstanceAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+      - !Ref Subnet1
+      - !Ref Subnet2
+      - !Ref Subnet3
+      LaunchConfigurationName: !Ref EcsInstanceLaunchConfig
+      MinSize: !Ref ClusterSize
+      MaxSize: !Ref ClusterSize
+      DesiredCapacity: !Ref ClusterSize
+
+
+  DaskLogGroup:
+      Type: "AWS::Logs::LogGroup"
+      Properties:
+        LogGroupName: !Sub "${AWS::StackName}"
+        RetentionInDays: 7
+
+  #####################################################################################
+  # Dask Scheuler
+  #####################################################################################
+
+  DaskSchedulerTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: host
+      ContainerDefinitions:
+      - MemoryReservation: 1024
+        Cpu: 0
+        Essential: true
+        Name: dask-scheduler
+        Image:
+          !Ref DaskSchedulerImage
+        Command:
+          - dask-scheduler
+        PortMappings:
+        - ContainerPort: !FindInMap [service, daskscheduler-app, port]
+          HostPort: !FindInMap [service, daskscheduler-app, port]
+        - ContainerPort: !FindInMap [service, daskscheduler-bokeh, port]
+          HostPort: !FindInMap [service, daskscheduler-bokeh, port]
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-region: !Ref AWS::Region
+            awslogs-group: !Ref DaskLogGroup
+            awslogs-stream-prefix: dask-scheduler
+
+  DaskSchedulerServiceSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Dask Scheduler Allowed Ports
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: !FindInMap [ service, daskscheduler-app, port ]
+        ToPort: !FindInMap [ service, daskscheduler-app, port ]
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+
+  DaskSchedulerServiceELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      LoadBalancerName: !Sub "dask-scheduler-${AWS::StackName}"
+      SecurityGroups:
+      - !Ref DaskSchedulerServiceSG
+      Subnets:
+      - !Ref Subnet1
+      - !Ref Subnet2
+      - !Ref Subnet3
+      Scheme: internet-facing
+      HealthCheck:
+        HealthyThreshold: 10
+        Interval: 30
+        Target: !Join ['', [ 'HTTP:', !FindInMap [ service, daskscheduler-bokeh, port ], '/' ] ]
+        Timeout: 5
+        UnhealthyThreshold: 2
+      Listeners:
+      - InstancePort: !FindInMap [ service, daskscheduler-app, port ]
+        LoadBalancerPort: !FindInMap [ service, daskscheduler-app, port ]
+        Protocol: TCP
+        InstanceProtocol: TCP
+      - InstancePort: !FindInMap [ service, daskscheduler-bokeh, port ]
+        LoadBalancerPort: 80
+        Protocol: TCP
+        InstanceProtocol: TCP
+      ConnectionSettings:
+        IdleTimeout: 3600
+
+  DaskSchedulerService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref EcsCluster
+      DesiredCount: 1
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
+      TaskDefinition: !Ref DaskSchedulerTask
+      Role: arn:aws:iam::631846485826:role/ecsServiceRole
+      LoadBalancers:
+      - ContainerName: dask-scheduler
+        ContainerPort: !FindInMap [service, daskscheduler-app, port]
+        LoadBalancerName: !Ref DaskSchedulerServiceELB
+
+
+  #####################################################################################
+  # Dask Worker
+  #####################################################################################
+
+  DaskWorkerTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: host
+      ContainerDefinitions:
+      - MemoryReservation: 1024
+        Essential: true
+        Name: dask-worke0
+        Image:
+          !Ref DaskWorkerImage
+        Cpu: 0
+        PortMappings:
+        - ContainerPort: !FindInMap [service, daskworker, port]
+          HostPort: !FindInMap [service, daskworker, port]
+        Command:
+          - dask-worker
+          - !Join [ ":", [ !GetAtt DaskSchedulerServiceELB.DNSName, !FindInMap [service, daskscheduler-app, port] ] ]
+          - --worker-port
+          - !FindInMap [service, daskworker, port]
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-region: !Ref AWS::Region
+            awslogs-group: !Ref DaskLogGroup
+            awslogs-stream-prefix: dask-scheduler
+
+  DaskWorkerService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref EcsCluster
+      DesiredCount: !Ref ClusterSize
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 0
+      TaskDefinition: !Ref DaskWorkerTask
+

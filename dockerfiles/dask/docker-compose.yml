@@ -1,0 +1,18 @@
+version: '2.1'
+
+services:
+
+  scheduler:
+    image: sayreblades/dask:${VERSION:-latest}
+    build: .
+    command: dask-scheduler
+    ports:
+      - 8786
+      - 8787
+
+  worker:
+    image: sayreblades/dask:${VERSION:-latest}
+    build: .
+    command: dask-worker scheduler:8786
+    links:
+      - scheduler
