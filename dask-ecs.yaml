@@ -372,7 +372,7 @@ Resources:
           Options:
             awslogs-region: !Ref AWS::Region
             awslogs-group: !Ref DaskLogGroup
-            awslogs-stream-prefix: dask-scheduler
+            awslogs-stream-prefix: dask-worker
 
   DaskWorkerService:
     Type: AWS::ECS::Service
