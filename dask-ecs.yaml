@@ -26,12 +26,15 @@ Parameters:
 
   EC2ImageId:
     Type: String
-    Description: EC2 AMI id
+    Description: EC2 AMI id (use ami-53dd2c29 for ecs only; use ami-2505a35f for ecs with cuda/theano/etc..)
     Default: ami-53dd2c29
+    AllowedValues:
+      - ami-53dd2c29
+      - ami-2505a35f
 
   EC2InstanceType:
     Type: String
-    Description: EC2 instance type
+    Description: EC2 instance type (generally m4.x for non cuda ami; p2.x for cuda ami)
     Default: m4.large
 
   EC2KeyPairName:
@@ -40,15 +43,19 @@ Parameters:
 
   ClusterSize:
     Type: Number
+    Description: Number of nodes in the cluster
     Default: 3
 
   DaskSchedulerImage:
     Type: String
+    Description: Docker image with dask scheduler, must be runnable with command `dask-scheduler`
     Default: sayreblades/dask:0.0.1
 
   DaskWorkerImage:
     Type: String
+    Description: Docker image with dask worker, must be runnable with command `dask-worker [host] --worker-port [port]`
     Default: sayreblades/dask:0.0.1
+
 
 Outputs:
 
