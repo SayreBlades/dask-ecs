@@ -5,7 +5,7 @@ This is an opinionated template for spinning up a dask cluster based on docker.
 
 ## Install
 
-Simply navigate to your aws console and import the dask-ecs.yaml file.  In the web portal you can configure to your liking.
+Simply navigate to your [aws console cloudformation dash](https://console.aws.amazon.com/cloudformation) import the dask-ecs.yaml file.  In the web portal you can configure to your liking.
 
 
 ## Example Docker Scheduler
