@@ -5,7 +5,9 @@ This is an opinionated template for spinning up a dask cluster based on docker.
 
 ## Install
 
-Simply navigate to your [aws console cloudformation dash](https://console.aws.amazon.com/cloudformation) import the dask-ecs.yaml file.  In the web portal you can configure to your liking.
+First clone this repo.
+
+Then navigate to your [aws console cloudformation dash](https://console.aws.amazon.com/cloudformation) -> create stack -> choose a template -> Upload a template to Amazon S3 -> choose file -> then navigate to this dask-ecs.yaml file.  In the web portal you can configure to your liking.
 
 
 ## Example Docker Scheduler
@@ -21,12 +23,12 @@ https://hub.docker.com/r/sayreblades/dask/
 ## Example client
 
 ```
-import dask
+from dask import bag as db
 import distributed
 
 
 client = distributed.Client(address="[YourDaskServer:Port]")
-b = dask.bag.from_sequence([1, 2, 3, 4, 5, 6])
+b = db.from_sequence([1, 2, 3, 4, 5, 6])
 c = b.map(lambda o: o*2)
 f = client.compute(c)
 f.result()
@@ -49,7 +51,7 @@ awslogs get [log group name] -w
 - https://github.com/ogrisel/docker-distributed
 
 
-## Issues
+## Notes
 
 For building AMI's for use with ECS... putting these here for future reference:
 
