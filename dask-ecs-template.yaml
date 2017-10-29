@@ -43,12 +43,12 @@ Parameters:
   DaskSchedulerImage:
     Type: String
     Description: Docker image with dask scheduler, must be runnable with command `dask-scheduler`
-    Default: sayreblades/dask:0.0.2
+    Default: sayreblades/dask-ecs:python35-nolearn
 
   DaskWorkerImage:
     Type: String
     Description: Docker image with dask worker, must be runnable with command `dask-worker [host] --worker-port [port]`
-    Default: sayreblades/dask:0.0.2
+    Default: sayreblades/dask-ecs:python35-nolearn
 
 
 Outputs:

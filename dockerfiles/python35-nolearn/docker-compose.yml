@@ -3,7 +3,7 @@ version: '2.1'
 services:
 
   scheduler:
-    image: sayreblades/dask:${VERSION:-latest}
+    image: sayreblades/dask-ecs:${VERSION:-latest}
     build: .
     command: dask-scheduler
     ports:
@@ -11,7 +11,7 @@ services:
       - 8787
 
   jupyter:
-    image: sayreblades/dask:${VERSION:-latest}
+    image: sayreblades/dask-ecs:${VERSION:-latest}
     build: .
     links:
       - scheduler
@@ -20,7 +20,7 @@ services:
       - "8888:8888"
 
   worker:
-    image: sayreblades/dask:${VERSION:-latest}
+    image: sayreblades/dask-ecs:${VERSION:-latest}
     build: .
     command: dask-worker scheduler:8786
     links:
