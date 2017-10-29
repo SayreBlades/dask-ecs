@@ -4,3 +4,5 @@ RUN pip install dask==0.15.2 distributed==1.18.3 bokeh==0.12.9 jupyter==1.0.0 da
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
+
+WORKDIR /root/

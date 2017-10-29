@@ -18,19 +18,13 @@ Mappings:
       port: 8786
     daskscheduler-bokeh:
       port: 8787
+    jupyter-notebook:
+      port: 8888
     daskworker:
       port: 5000
 
 
 Parameters:
-
-  EC2ImageId:
-    Type: String
-    Description: EC2 AMI id (use ami-53dd2c29 for ecs only; use ami-2505a35f for ecs with cuda/theano/etc..)
-    Default: ami-53dd2c29
-    AllowedValues:
-      - ami-53dd2c29
-      - ami-2505a35f
 
   EC2InstanceType:
     Type: String
@@ -38,7 +32,7 @@ Parameters:
     Default: m4.large
 
   EC2KeyPairName:
-    Type: String
+    Type: AWS::EC2::KeyPair::KeyName
     Description: Used for ssh access to ec2 instances, create in ec2 dash -> key pairs
 
   ClusterSize:
@@ -49,12 +43,12 @@ Parameters:
   DaskSchedulerImage:
     Type: String
     Description: Docker image with dask scheduler, must be runnable with command `dask-scheduler`
-    Default: sayreblades/dask:0.0.1
+    Default: sayreblades/dask:0.0.2
 
   DaskWorkerImage:
     Type: String
     Description: Docker image with dask worker, must be runnable with command `dask-worker [host] --worker-port [port]`
-    Default: sayreblades/dask:0.0.1
+    Default: sayreblades/dask:0.0.2
 
 
 Outputs:
@@ -225,7 +219,7 @@ Resources:
   EcsInstanceLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      ImageId: !Ref EC2ImageId
+      ImageId: ami-2505a35f
       InstanceType: !Ref EC2InstanceType
       AssociatePublicIpAddress: "true"
       IamInstanceProfile: !Ref EcsInstanceProfile
@@ -290,6 +284,26 @@ Resources:
             awslogs-region: !Ref AWS::Region
             awslogs-group: !Ref DaskLogGroup
             awslogs-stream-prefix: dask-scheduler
+      - MemoryReservation: 1024
+        Cpu: 0
+        Essential: true
+        Name: jupyter-notebook
+        Image:
+          !Ref DaskSchedulerImage
+        Command:
+          - jupyter
+          - notebook
+          - --ip=0.0.0.0
+          - --allow-root
+        PortMappings:
+        - ContainerPort: !FindInMap [service, jupyter-notebook, port]
+          HostPort: !FindInMap [service, jupyter-notebook, port]
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-region: !Ref AWS::Region
+            awslogs-group: !Ref DaskLogGroup
+            awslogs-stream-prefix: jupyter-notebook
 
   DaskSchedulerServiceSG:
     Type: AWS::EC2::SecurityGroup
@@ -300,6 +314,10 @@ Resources:
       - IpProtocol: tcp
         FromPort: !FindInMap [ service, daskscheduler-app, port ]
         ToPort: !FindInMap [ service, daskscheduler-app, port ]
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: !FindInMap [ service, jupyter-notebook, port ]
+        ToPort: !FindInMap [ service, jupyter-notebook, port ]
         CidrIp: 0.0.0.0/0
       - IpProtocol: tcp
         FromPort: 80
@@ -330,6 +348,10 @@ Resources:
         InstanceProtocol: TCP
       - InstancePort: !FindInMap [ service, daskscheduler-bokeh, port ]
         LoadBalancerPort: 80
+        Protocol: TCP
+        InstanceProtocol: TCP
+      - InstancePort: !FindInMap [ service, jupyter-notebook, port ]
+        LoadBalancerPort: 8888
         Protocol: TCP
         InstanceProtocol: TCP
       ConnectionSettings:
