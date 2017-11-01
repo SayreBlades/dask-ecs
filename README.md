@@ -2,6 +2,10 @@
 
 This is an opinionated template for spinning up a dask cluster based on docker.
 
+## CloudFormation Topology
+
+![](docs/topology.png)
+
 
 ## Install
 
@@ -9,6 +13,33 @@ First clone this repo.
 
 Then navigate to your [aws console cloudformation dash](https://console.aws.amazon.com/cloudformation) -> create stack -> choose a template -> Upload a template to Amazon S3 -> choose file -> then navigate to this dask-ecs-template.yaml file.  In the web portal you can configure to your liking.
 
+## Parameters
+
+```
+EC2InstanceType:
+  Type: String
+  Description: EC2 instance type (generally m4.x for non cuda ami; p2.x for cuda ami)
+  Default: m4.large
+
+EC2KeyPairName:
+  Type: AWS::EC2::KeyPair::KeyName
+  Description: Used for ssh access to ec2 instances, create in ec2 dash -> key pairs
+
+ClusterSize:
+  Type: Number
+  Description: Number of nodes in the cluster
+  Default: 3
+
+DaskSchedulerImage:
+  Type: String
+  Description: Docker image with dask scheduler, must be runnable with command `dask-scheduler`
+  Default: sayreblades/dask-ecs:python35-nolearn
+
+DaskWorkerImage:
+  Type: String
+  Description: Docker image with dask worker, must be runnable with command `dask-worker [host] --worker-port [port]`
+  Default: sayreblades/dask-ecs:python35-nolearn
+```
 
 ## Example Docker Scheduler
 
@@ -61,4 +92,5 @@ http://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_inst
 
 
 For building GPU (p2.xlarge) instance on ecs:
+
 https://github.com/bfolkens/nvidia-docker-bootstrap
