@@ -17,7 +17,7 @@ services:
       - scheduler
     command: jupyter notebook --ip=0.0.0.0 --allow-root
     ports:
-      - "8888:8888"
+      - "8887:8888"
 
   worker:
     image: sayreblades/dask-ecs:${VERSION:-latest}
