@@ -179,7 +179,63 @@ Resources:
   EcsCluster:
     Type: AWS::ECS::Cluster
 
-  EcsInstanceSecurityGroup:
+  EcsServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ecs.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+            - elasticloadbalancing:DeregisterTargets
+            - elasticloadbalancing:Describe*
+            - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+            - elasticloadbalancing:RegisterTargets
+            - ec2:Describe*
+            - ec2:AuthorizeSecurityGroupIngress
+            Resource: "*"
+
+  EcsEc2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - ecs:CreateCluster
+            - ecs:DeregisterContainerInstance
+            - ecs:DiscoverPollEndpoint
+            - ecs:Poll
+            - ecs:RegisterContainerInstance
+            - ecs:StartTelemetrySession
+            - ecs:Submit*
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: "*"
+
+  EcsEc2InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Dask cluster machine security group
@@ -196,39 +252,23 @@ Resources:
         FromPort: 0
         ToPort: 65535
 
-  EcsInstancePolicy:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - ec2.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Path: "/"
-      ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
-
-  EcsInstanceProfile:
+  EcsEc2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: "/"
       Roles:
-      - Ref: EcsInstancePolicy
+      - Ref: EcsEc2InstanceRole
 
-  EcsInstanceLaunchConfig:
+  EcsEc2InstanceLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       ImageId: ami-2505a35f
       InstanceType: !Ref EC2InstanceType
       AssociatePublicIpAddress: "true"
-      IamInstanceProfile: !Ref EcsInstanceProfile
+      IamInstanceProfile: !Ref EcsEc2InstanceProfile
       KeyName: !Ref EC2KeyPairName
       SecurityGroups:
-      - !Ref EcsInstanceSecurityGroup
+      - !Ref EcsEc2InstanceSecurityGroup
       EbsOptimized: false
       UserData:
         "Fn::Base64": !Sub |
@@ -241,14 +281,14 @@ Resources:
           VolumeType: gp2
           DeleteOnTermination: "true"
 
-  EcsInstanceAutoScalingGroup:
+  EcsEc2InstanceAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier:
       - !Ref Subnet1
       - !Ref Subnet2
       - !Ref Subnet3
-      LaunchConfigurationName: !Ref EcsInstanceLaunchConfig
+      LaunchConfigurationName: !Ref EcsEc2InstanceLaunchConfig
       MinSize: !Ref ClusterSize
       MaxSize: !Ref ClusterSize
       DesiredCapacity: !Ref ClusterSize
@@ -369,7 +409,7 @@ Resources:
         MaximumPercent: 100
         MinimumHealthyPercent: 0
       TaskDefinition: !Ref DaskSchedulerTask
-      Role: arn:aws:iam::631846485826:role/ecsServiceRole
+      Role: !Ref EcsServiceRole
       LoadBalancers:
       - ContainerName: dask-scheduler
         ContainerPort: !FindInMap [service, daskscheduler-app, port]
