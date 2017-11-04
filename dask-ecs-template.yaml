@@ -50,6 +50,10 @@ Parameters:
     Description: Docker image with dask worker, must be runnable with command `dask-worker [host] --worker-port [port]`
     Default: sayreblades/dask-ecs:python35
 
+  EBSVolumeSize:
+    Type: Number
+    Description: Size of EC2 Disk Volume in gigs
+    Default: 50
 
 Outputs:
 
@@ -273,11 +277,11 @@ Resources:
       UserData:
         "Fn::Base64": !Sub |
           #!/bin/bash
-          echo ECS_CLUSTER=${EcsCluster} >> /etc/ecs/ecs.config
+          echo ECS_CLUSTER=${EcsCluster} > /etc/ecs/ecs.config
       BlockDeviceMappings:
       - DeviceName: /dev/xvda
         Ebs:
-          VolumeSize: "50"
+          VolumeSize: !Ref EBSVolumeSize
           VolumeType: gp2
           DeleteOnTermination: "true"
 
