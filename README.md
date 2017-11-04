@@ -39,6 +39,11 @@ DaskWorkerImage:
   Type: String
   Description: Docker image with dask worker, must be runnable with command `dask-worker [host] --worker-port [port]`
   Default: sayreblades/dask-ecs:python35-nolearn
+
+EBSVolumeSize:
+  Type: Number
+  Description: Size of EC2 Disk Volume in gigs
+  Default: 50
 ```
 
 ## Example Docker Scheduler
@@ -82,15 +87,20 @@ awslogs get [log group name] -w
 - https://github.com/ogrisel/docker-distributed
 
 
-## Wargnings
+## Warnings
 
 - The cluster is wide open in terms of network connectivity.  Use at your own risk.
 
 - The current configuration uses a custom ami image (ami-2505a35f) which is only available in us-east-1 region.
 
-- If you are using the p2.x class of machines for your cluster, you may need to request a resource limit
+- If you are using the p2.x class of machines for your cluster, you may need to request a resource limit increase
   based on your region: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html
 
+- If you are attempting to use dask locally, you should take care that your local python dependencies exactly
+  match the versions deployed to the cluster.  One convention Im using to manage this is by maintaining a
+  requirements.txt file associated with each docker container.
+  See https://github.com/SayreBlades/dask-ecs/tree/master/dockerfiles/python35
+  Which was used to build the container: sayreblades/dask-ecs:python35
 
 ## Notes
 
