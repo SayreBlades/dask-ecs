@@ -43,12 +43,12 @@ DaskWorkerImage:
 
 ## Example Docker Scheduler
 
-https://hub.docker.com/r/sayreblades/dask/
+https://hub.docker.com/r/sayreblades/dask-ecs/
 
 
 ## Example Docker Worker
 
-https://hub.docker.com/r/sayreblades/dask/
+https://hub.docker.com/r/sayreblades/dask-ecs/
 
 
 ## Example client
