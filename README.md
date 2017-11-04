@@ -82,6 +82,16 @@ awslogs get [log group name] -w
 - https://github.com/ogrisel/docker-distributed
 
 
+## Wargnings
+
+- The cluster is wide open in terms of network connectivity.  Use at your own risk.
+
+- The current configuration uses a custom ami image (ami-2505a35f) which is only available in us-east-1 region.
+
+- If you are using the p2.x class of machines for your cluster, you may need to request a resource limit
+  based on your region: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html
+
+
 ## Notes
 
 For building AMI's for use with ECS... putting these here for future reference:
@@ -94,3 +104,9 @@ http://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_inst
 For building GPU (p2.xlarge) instance on ecs:
 
 https://github.com/bfolkens/nvidia-docker-bootstrap
+
+
+## TODO
+
+- add optional security
+- add a cuda ready image for each region
