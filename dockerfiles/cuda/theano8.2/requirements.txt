@@ -1,0 +1,10 @@
+bokeh==0.12.9
+cloudpickle==0.4.1
+dask-searchcv==0.1.0
+dask==0.15.2
+distributed==1.18.3
+numpy==1.13.3
+scikit-learn==0.19.1
+scipy==1.0.0
+tornado==4.5.2
+ipywidgets==7.0.3
