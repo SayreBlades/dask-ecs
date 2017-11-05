@@ -14,17 +14,11 @@ First clone this repo.
 Then navigate to your [aws console cloudformation dash](https://console.aws.amazon.com/cloudformation) -> create stack -> choose a template -> Upload a template to Amazon S3 -> choose file -> then navigate to this dask-ecs-template.yaml file.  In the web portal you can configure to your liking.
 
 
-## Example Docker Scheduler
+## Example Docker Containers
 
 https://hub.docker.com/r/sayreblades/dask-ecs/
 
-
-## Example Docker Worker
-
-https://hub.docker.com/r/sayreblades/dask-ecs/
-
-
-## Example client
+## Example Dask Client
 
 ```
 from dask import bag as db
