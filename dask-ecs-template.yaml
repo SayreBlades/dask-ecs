@@ -26,10 +26,15 @@ Mappings:
 
 Parameters:
 
+  AMI:
+    Type: String
+    Description: AMI to load on your ec2 instances (use ami-b115a3cb on p2.x)
+    Default: ami-20ff515a
+
   EC2InstanceType:
     Type: String
     Description: EC2 instance type (generally m4.x for non cuda ami; p2.x for cuda ami)
-    Default: p2.xlarge
+    Default: m4.xlarge
 
   EC2KeyPairName:
     Type: AWS::EC2::KeyPair::KeyName
@@ -266,7 +271,7 @@ Resources:
   EcsEc2InstanceLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      ImageId: ami-2505a35f
+      ImageId: !Ref AMI
       InstanceType: !Ref EC2InstanceType
       AssociatePublicIpAddress: "true"
       IamInstanceProfile: !Ref EcsEc2InstanceProfile
