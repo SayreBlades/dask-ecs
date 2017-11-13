@@ -247,6 +247,8 @@ Resources:
             - ecs:Submit*
             - logs:CreateLogStream
             - logs:PutLogEvents
+            - ecr:*
+            - cloudtrail:LookupEvents
             Resource: "*"
 
   EcsEc2InstanceSecurityGroup:
