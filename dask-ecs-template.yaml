@@ -55,6 +55,11 @@ Parameters:
     Description: Docker image with dask worker, must be runnable with command `dask-worker [host] --worker-port [port]`
     Default: sayreblades/dask-ecs:python35
 
+  JupyterImage:
+    Type: String
+    Description: Docker image with jupyter installed, must be runnable with command `jupyter notebook --ip=0.0.0.0 --allow-root`
+    Default: sayreblades/dask-ecs:python35
+
   EBSVolumeSize:
     Type: Number
     Description: Size of EC2 Disk Volume in gigs
@@ -321,8 +326,7 @@ Resources:
         Cpu: 0
         Essential: true
         Name: dask-scheduler
-        Image:
-          !Ref DaskSchedulerImage
+        Image: !Ref DaskSchedulerImage
         Command:
           - dask-scheduler
         PortMappings:
@@ -340,8 +344,7 @@ Resources:
         Cpu: 0
         Essential: true
         Name: jupyter-notebook
-        Image:
-          !Ref DaskSchedulerImage
+        Image: !Ref JupyterImage
         Command:
           - jupyter
           - notebook
